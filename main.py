@@ -1,26 +1,10 @@
-import os
-
 import requests
 from bs4 import BeautifulSoup
-import csv
+from functions import load
 
 RATING_CORRESPONDING_DICT = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
 
-COLUMNS = ['product_page_url', 'universal_ product_code (upc)', 'title', 'price_including_tax',
-           'price_excluding_tax', 'number_available', 'product_description', 'category', 'review_rating',
-           'image_url']
-
-
-def write_csv_files_titles():
-    with open('result.csv', 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile, delimiter=';')
-        writer.writerow(COLUMNS)
-
-
-def write_line(line: list):
-    with open('result.csv', 'a', newline='') as csvfile:
-        writer = csv.writer(csvfile, delimiter=';')
-        writer.writerow(line)
+BASE_URL = 'https://books.toscrape.com/catalogue/'
 
 
 def extract_book_information(url: str) -> list:
@@ -69,20 +53,29 @@ def extract_book_information(url: str) -> list:
             category, rating, image_url]
 
 
-def delete_csv_file():
-    # Try to delete the csv file it does exist. If not, print a message.
-    try:
-        os.remove('result.csv')
-    except FileNotFoundError:
-        print("File result.csv not found. Nothing deleted, will be created again.")
+def extract_books_links_from_page(url: str):
+    get_url = requests.get(url)
+    get_text = get_url.text
+    soup = BeautifulSoup(get_text, 'html.parser')
+    ol = soup.find('ol', class_='row')
+    books_h3 = ol.find_all('h3')
+    for h3 in books_h3:
+        a_tag = h3.find('a')
+        if a_tag and 'href' in a_tag.attrs:
+            splitted_link = a_tag['href'].split('../../../')[-1]
+            url_to_extract = f"{BASE_URL}{splitted_link}"
+            print(url_to_extract)
 
 
 def run():
-    delete_csv_file()
-    write_csv_files_titles()
+    load.delete_csv_file()
+    load.write_csv_files_titles()
     url = 'https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html'
     line_to_write = extract_book_information(url)
-    write_line(line_to_write)
+    load.write_line(line_to_write)
+
+    # url = 'https://books.toscrape.com/catalogue/category/books/travel_2/index.html'
+    # extract_books_links_from_page(url)
 
 
 if __name__ == "__main__":
