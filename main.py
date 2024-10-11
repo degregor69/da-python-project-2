@@ -1,6 +1,7 @@
 import requests
 import time
 from bs4 import BeautifulSoup
+
 from functions import load
 
 RATING_CORRESPONDING_DICT = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
@@ -22,21 +23,21 @@ def extract_book_information(url: str) -> list:
         title = title.text
 
     # product information
-
     table = soup.find('table', class_='table table-striped')
     all_td = table.find_all('td')
     upc = all_td[0].text
     price_excluding_tax = all_td[2].text.split('£')[-1]
     price_including_tax = all_td[3].text.split('£')[-1]
-    number_available = all_td[-1].text
+    number_available = all_td[-2].text
     number_available = number_available[number_available.find("(") + 1:number_available.find(")")]
 
     # product description
-    product_information_paragraph = soup.find_all("p", )[-1]
-    product_information = product_information_paragraph.text
+    product_description_div = soup.find('div', id='product_description')
+    product_description_p = product_description_div.find_next_sibling('p')
+    product_description = product_description_p.text
 
     # category
-    category_link = soup.find_all('a')[-1]
+    category_link = soup.find_all('a')[3]
     category = category_link.text
 
     # review rating
@@ -49,9 +50,64 @@ def extract_book_information(url: str) -> list:
     image = soup.find("img")
     image_url = image["src"]
 
-    return [product_page_url, title, upc, price_excluding_tax, price_including_tax, number_available,
-            product_information,
+    return [product_page_url, upc, title, price_excluding_tax, price_including_tax, number_available,
+            product_description,
             category, rating, image_url]
+
+
+def extract_book_information_as_dict(url: str) -> dict:
+    get_url = requests.get(url)
+    get_text = get_url.text
+    soup = BeautifulSoup(get_text, 'html.parser')
+
+    # product_page_url
+    product_page_url = url
+
+    # title
+    title = soup.find('h1')
+    if title:
+        title = title.text
+
+    # product information
+    table = soup.find('table', class_='table table-striped')
+    all_td = table.find_all('td')
+    upc = all_td[0].text
+    price_excluding_tax = all_td[2].text.split('£')[-1]
+    price_including_tax = all_td[3].text.split('£')[-1]
+    number_available = all_td[-2].text
+    number_available = number_available[number_available.find("(") + 1:number_available.find(")")]
+
+    # product description
+    product_description_div = soup.find('div', id='product_description')
+    product_description_p = product_description_div.find_next_sibling('p')
+    product_description = product_description_p.text
+
+    # category
+    category_link = soup.find_all('a')[3]
+    category = category_link.text
+
+    # review rating
+    product_main = soup.find("div", class_="col-sm-6 product_main")
+    product_main_p = product_main.find_all("p")
+    rating_as_text = product_main_p[2]["class"][-1]
+    rating = RATING_CORRESPONDING_DICT[rating_as_text]
+
+    # image url
+    image = soup.find("img")
+    image_url = image["src"]
+
+    return {
+        "product_page_url": product_page_url,
+        "title": title,
+        "upc": upc,
+        "price_excluding_tax": price_excluding_tax,
+        "price_including_tax": price_including_tax,
+        "number_available": number_available,
+        "product_description": product_description,
+        "category": category,
+        "rating": rating,
+        "image_url": image_url
+    }
 
 
 def find_next(url: str):
@@ -86,21 +142,24 @@ def extract_books_links_from_category(url: str):
     books_h3 = ol.find_all('h3')
     for h3 in books_h3:
         a_tag = h3.find('a')
-        if a_tag and 'href' in a_tag.attrs:
-            splitted_link = a_tag['href'].split('../../../')[-1]
-            url_to_extract = f"{BASE_URL}{splitted_link}"
-            books_links.append(url_to_extract)
+        if not a_tag:
+            continue
+        books_links.append(extract_book_link(a_tag))
     return books_links
+
+
+def extract_book_link(a_tag):
+    if a_tag and 'href' in a_tag.attrs:
+        splitted_link = a_tag['href'].split('../../../')[-1]
+        url_to_extract = f"{BASE_URL}{splitted_link}"
+        return url_to_extract
 
 
 def run():
     start_time = time.time()
 
-    # load.delete_csv_file()
-    # load.write_csv_files_titles()
-    # url = 'https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html'
-    # line_to_write = extract_book_information(url)
-    # load.write_line(line_to_write)
+    load.delete_csv_file()
+    load.write_csv_files_titles()
 
     # url = 'https://books.toscrape.com/catalogue/category/books/travel_2/index.html'
     url = 'https://books.toscrape.com/catalogue/category/books/mystery_3/index.html'
