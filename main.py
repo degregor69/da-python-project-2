@@ -34,9 +34,11 @@ def extract_book_information(url: str) -> list:
     number_available = number_available[number_available.find("(") + 1:number_available.find(")")]
 
     # product description
+    product_description = "Description not found"
     product_description_div = soup.find('div', id='product_description')
-    product_description_p = product_description_div.find_next_sibling('p')
-    product_description = product_description_p.text
+    if product_description_div:
+        product_description_p = product_description_div.find_next_sibling('p')
+        product_description = product_description_p.text
 
     # category
     category_link = soup.find_all('a')[3]
@@ -80,9 +82,11 @@ def extract_book_information_as_dict(url: str) -> dict:
     number_available = number_available[number_available.find("(") + 1:number_available.find(")")]
 
     # product description
+    product_description = "Description not found"
     product_description_div = soup.find('div', id='product_description')
-    product_description_p = product_description_div.find_next_sibling('p')
-    product_description = product_description_p.text
+    if product_description_div:
+        product_description_p = product_description_div.find_next_sibling('p')
+        product_description = product_description_p.text
 
     # category
     category_link = soup.find_all('a')[3]
@@ -130,7 +134,7 @@ def extract_all_categories_links(url: str):
     get_text = get_url.text
     soup = BeautifulSoup(get_text, 'html.parser')
     nav_list = soup.find("ul", class_="nav nav-list")
-    categories_links = nav_list.find_all("li")
+    categories_links = nav_list.find_all("li")[1:]
     categories_list = []
     for category_link in categories_links:
         cat_a = category_link.find("a")
@@ -175,27 +179,28 @@ def extract_book_link(a_tag):
 
 def run():
     start_time = time.time()
+    load.delete_csv_file()
+    load.write_csv_files_titles()
 
     url = 'https://books.toscrape.com//index.html'
     categories_links_and_names = extract_all_categories_links(url)
-    print(categories_links_and_names)
-    # load.delete_csv_file()
-    # load.write_csv_files_titles()
+    print("Les liens et les noms des catégories ont été extraits.")
+    for category in categories_links_and_names:
+        print(f"Début de l'extraction de la catégorie : {category.get('cat_name')}")
+        cat_url = category['cat_url']
+        categories_pages = extract_categories_pages(cat_url)
+        for category_page in categories_pages:
+            book_links = extract_books_links_from_category(category_page)
+            for book_url in book_links:
+                line_to_write = extract_book_information(book_url)
+                load.write_line(line_to_write)
 
-    #
-    # # url = 'https://books.toscrape.com/catalogue/category/books/travel_2/index.html'
-    # url = 'https://books.toscrape.com/catalogue/category/books/mystery_3/index.html'
-    # categories_pages = extract_categories_pages(url)
-    # for category_page in categories_pages:
-    #     book_links = extract_books_links_from_category(category_page)
-    #     for book_url in book_links:
-    #         line_to_write = extract_book_information(book_url)
-    #         load.write_line(line_to_write)
-    #
     # # Calculate the execution time
     end_time = time.time()
     execution_time = end_time - start_time
     print(f'Extraction done. Execution time: {execution_time:.2f} seconds.')
+    # url = "https://books.toscrape.com/catalogue/alice-in-wonderland-alices-adventures-in-wonderland-1_5/index.html"
+    # extract_book_information_as_dict(url)
 
 
 if __name__ == "__main__":
