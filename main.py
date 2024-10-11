@@ -1,3 +1,5 @@
+from unicodedata import category
+
 import requests
 import time
 from bs4 import BeautifulSoup
@@ -122,6 +124,22 @@ def find_next(url: str):
     return
 
 
+def extract_all_categories_links(url: str):
+    base_url = "https://books.toscrape.com/"
+    get_url = requests.get(url)
+    get_text = get_url.text
+    soup = BeautifulSoup(get_text, 'html.parser')
+    nav_list = soup.find("ul", class_="nav nav-list")
+    categories_links = nav_list.find_all("li")
+    categories_list = []
+    for category_link in categories_links:
+        cat_a = category_link.find("a")
+        cat_name = cat_a.text.strip()
+        cat_url = f"{base_url}{cat_a['href']}"
+        categories_list.append({"cat_url": cat_url, "cat_name": cat_name})
+    return categories_list
+
+
 def extract_categories_pages(url: str):
     categories_pages = [url]
     base_url = url.split("index.html")[0]
@@ -158,19 +176,23 @@ def extract_book_link(a_tag):
 def run():
     start_time = time.time()
 
-    load.delete_csv_file()
-    load.write_csv_files_titles()
+    url = 'https://books.toscrape.com//index.html'
+    categories_links_and_names = extract_all_categories_links(url)
+    print(categories_links_and_names)
+    # load.delete_csv_file()
+    # load.write_csv_files_titles()
 
-    # url = 'https://books.toscrape.com/catalogue/category/books/travel_2/index.html'
-    url = 'https://books.toscrape.com/catalogue/category/books/mystery_3/index.html'
-    categories_pages = extract_categories_pages(url)
-    for category_page in categories_pages:
-        book_links = extract_books_links_from_category(category_page)
-        for book_url in book_links:
-            line_to_write = extract_book_information(book_url)
-            load.write_line(line_to_write)
-
-    # Calculate the execution time
+    #
+    # # url = 'https://books.toscrape.com/catalogue/category/books/travel_2/index.html'
+    # url = 'https://books.toscrape.com/catalogue/category/books/mystery_3/index.html'
+    # categories_pages = extract_categories_pages(url)
+    # for category_page in categories_pages:
+    #     book_links = extract_books_links_from_category(category_page)
+    #     for book_url in book_links:
+    #         line_to_write = extract_book_information(book_url)
+    #         load.write_line(line_to_write)
+    #
+    # # Calculate the execution time
     end_time = time.time()
     execution_time = end_time - start_time
     print(f'Extraction done. Execution time: {execution_time:.2f} seconds.')
