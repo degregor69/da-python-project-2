@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
+from . import transform
 
-RATING_CORRESPONDING_DICT = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
 BASE_URL = 'https://books.toscrape.com/catalogue/'
 
 
@@ -80,43 +80,13 @@ def extract_book_information(url: str) -> list:
     get_text = get_url.text
     soup = BeautifulSoup(get_text, 'html.parser')
 
-    # product_page_url
     product_page_url = url
-
-    # title
-    title = soup.find('h1')
-    if title:
-        title = title.text
-
-    # product information
-    table = soup.find('table', class_='table table-striped')
-    all_td = table.find_all('td')
-    upc = all_td[0].text
-    price_excluding_tax = all_td[2].text.split('£')[-1]
-    price_including_tax = all_td[3].text.split('£')[-1]
-    number_available = all_td[-2].text
-    number_available = number_available[number_available.find("(") + 1:number_available.find(")")]
-
-    # product description
-    product_description = "Description not found"
-    product_description_div = soup.find('div', id='product_description')
-    if product_description_div:
-        product_description_p = product_description_div.find_next_sibling('p')
-        product_description = product_description_p.text
-
-    # category
-    category_link = soup.find_all('a')[3]
-    category = category_link.text
-
-    # review rating
-    product_main = soup.find("div", class_="col-sm-6 product_main")
-    product_main_p = product_main.find_all("p")
-    rating_as_text = product_main_p[2]["class"][-1]
-    rating = RATING_CORRESPONDING_DICT[rating_as_text]
-
-    # image url
-    image = soup.find("img")
-    image_url = image["src"]
+    title = transform.get_book_title(soup)
+    upc, price_excluding_tax, price_including_tax, number_available = transform.get_product_information(soup)
+    product_description = transform.get_product_description(soup)
+    category = transform.get_category(soup)
+    rating = transform.get_rating(soup)
+    image_url = transform.get_image_url(soup)
 
     return [product_page_url, upc, title, price_excluding_tax, price_including_tax, number_available,
             product_description,
