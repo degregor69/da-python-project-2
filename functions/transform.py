@@ -46,4 +46,9 @@ def get_rating(soup: BeautifulSoup):
 
 def get_image_url(soup: BeautifulSoup):
     image = soup.find("img")
-    return image.get("src")
+    image_src = image.get("src")
+    if not image_src:
+        return "Image not available"
+    base_url = "https://books.toscrape.com/"
+    img_url = image_src.split("../../")[-1]
+    return base_url + img_url
