@@ -1,3 +1,6 @@
+import os
+
+import requests
 from bs4 import BeautifulSoup
 
 RATING_CORRESPONDING_DICT = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
@@ -44,11 +47,29 @@ def get_rating(soup: BeautifulSoup):
     return RATING_CORRESPONDING_DICT.get(rating_as_text)
 
 
-def get_image_url(soup: BeautifulSoup):
+def get_image_url(soup: BeautifulSoup, title: str):
     image = soup.find("img")
     image_src = image.get("src")
     if not image_src:
         return "Image not available"
     base_url = "https://books.toscrape.com/"
-    img_url = image_src.split("../../")[-1]
-    return base_url + img_url
+    local_url = image_src.split("../../")[-1]
+    img_url = base_url + local_url
+    download_image(img_url, title)
+    return img_url
+
+
+def download_image(image_url, image_name):
+    # Two levels to be at pictures directory level
+    pictures_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'pictures')
+    try:
+        response = requests.get(image_url)
+        response.raise_for_status()  # Vérifie si la requête a réussi
+    except requests.RequestException as e:
+        print(f"Erreur lors du téléchargement de l'image: {e}")
+        return
+
+    # Sauvegarder l'image dans le dossier 'pictures'
+    image_path = os.path.join(pictures_dir, f"{image_name}_picture.png")
+    with open(image_path, 'wb') as file:
+        file.write(response.content)

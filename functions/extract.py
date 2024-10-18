@@ -86,7 +86,7 @@ def extract_book_information(url: str) -> list:
     product_description = transform.get_product_description(soup)
     category = transform.get_category(soup)
     rating = transform.get_rating(soup)
-    image_url = transform.get_image_url(soup)
+    image_url = transform.get_image_url(soup, title)
 
     return [product_page_url, upc, title, price_excluding_tax, price_including_tax, number_available,
             product_description,
