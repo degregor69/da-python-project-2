@@ -3,6 +3,7 @@ from functions import load, extract
 
 
 def run():
+    print("Début de l'exécution.")
     start_time = time.time()
     load.create_pictures_file()
     url = 'https://books.toscrape.com//index.html'
