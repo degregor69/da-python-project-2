@@ -1,4 +1,5 @@
 import os
+import re
 
 import requests
 from bs4 import BeautifulSoup
@@ -59,17 +60,20 @@ def get_image_url(soup: BeautifulSoup, title: str):
     return img_url
 
 
+def clean_filename(filename):
+    return re.sub(r'[<>:"/\\|?*]', ' ', filename)
+
+
 def download_image(image_url, image_name):
     # Two levels to be at pictures directory level
     pictures_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'pictures')
     try:
         response = requests.get(image_url)
-        response.raise_for_status()  # Vérifie si la requête a réussi
+        response.raise_for_status()
     except requests.RequestException as e:
         print(f"Erreur lors du téléchargement de l'image: {e}")
         return
 
-    # Sauvegarder l'image dans le dossier 'pictures'
     image_path = os.path.join(pictures_dir, f"{image_name}_picture.png")
     with open(image_path, 'wb') as file:
         file.write(response.content)
