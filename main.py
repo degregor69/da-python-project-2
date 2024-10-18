@@ -4,6 +4,7 @@ from functions import load, extract
 
 def run():
     start_time = time.time()
+    load.create_pictures_file()
     url = 'https://books.toscrape.com//index.html'
     categories_links_and_names = extract.extract_all_categories_links(url)
     print("Les liens et les noms des catégories ont été extraits.")
